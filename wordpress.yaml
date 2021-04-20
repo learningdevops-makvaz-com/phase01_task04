@@ -1,7 +1,42 @@
 ---
-- name: Deploy Wordpress
+- name: Setting up wordpress
   hosts: all
   tasks:
 
-    - name: message to remove
-      command: echo 'Here you gonna put all tasks and roles that gonna be runing on the VM'
+    - name: Update repositories 
+      become: true
+      apt:
+        #upgrade: yes
+        update_cache: yes
+        cache_valid_time: 86400 #A day
+      
+    - name: Install Wordpress
+      become: true
+      apt:
+        name: wordpress
+        state: present
+     
+    - name: Install php
+      become: true
+      apt:
+        name: php
+        state: present
+     
+    - name: Install Apache-php
+      become: true
+      apt:
+        name: libapache2-mod-php
+        state: present
+     
+    
+    - name: Install MySQL Server
+      become: true
+      apt:
+        name: mysql-server
+        state: present
+    
+    - name: Install php-mysql
+      become: true
+      apt:
+        name: php-mysql
+        state: present
