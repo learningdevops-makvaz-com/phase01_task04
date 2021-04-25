@@ -60,7 +60,7 @@
     - name: Create DB for wordpress
       mysql_db:
         login_host: 'localhost'
-        login_user: 'root'
-        login_password: ''
+        login_user: 'wp_user'
+        login_password: 'wp_password'
         name: wp_db
         state: present
