@@ -29,8 +29,20 @@
       apt:
         name: nginx 
         state: present
-     
+
+    - name: Open firewall for nginx
+      become: true
+      ufw:
+        rule: allow
+        name: 'Nginx Full'
     
+    - name: Copy NGINX default settings file
+      become: true
+      copy:
+        src: /vagrant/default
+        dest: /etc/nginx/sites-enabled
+        force: yes
+
     - name: Install MySQL Server
       become: true
       apt:
@@ -71,7 +83,7 @@
       tags:
         - always
 
-    - name: Updating wp-cli
+    - name: updating wp-cli
       become: true
       shell: "/bin/wp cli update --yes"
       when: wpcli_exist.stat.exists
@@ -90,14 +102,28 @@
       tags:
         - wp
         - install  
-    
+
+    - name: Checking if Wordpress is installed
+      stat: path=/var/www/html/wordpress
+      register: wp_installed
+
     - name: Install Wordpress
       shell: "sudo wp core download --path=/var/www/html/wordpress --allow-root"
-      register: wp_installed
+      when: not wp_installed.stat.exists
+
+    - name: Verifying if wp-config file exists
+      stat: path=/var/www/html/wordpress/wp-config.php
+      register: wp_configured
 
     - name: Configure Wordpress DB Connection
       shell: "sudo wp config create --dbname=wp_db --dbuser=wp_user --dbpass=wp_password --path=/var/www/html/wordpress --allow-root"
+      when: not wp_configured.stat.exists
 
     - name: Configure Wordpress Admin User
       shell: 'sudo wp core install --url="192.168.50.2" --title="Blogging Platform" --admin_user=admin --admin_email=danpal@example.com --admin_password="!2three456." --path=/var/www/html/wordpress --allow-root'
-
+  
+    - name: Refresh nginx
+      become: true
+      systemd: 
+        name: nginx
+        state: reloaded
