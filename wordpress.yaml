@@ -2,7 +2,6 @@
 - name: Setting up wordpress
   hosts: all
   tasks:
-
     - name: Update repositories 
       become: true
       apt:
@@ -10,33 +9,49 @@
         update_cache: yes
         cache_valid_time: 86400 #A day
       
-    - name: Install Wordpress
+    - name: Install php dependencies
       become: true
       apt:
-        name: wordpress
+        name:
+          - php-cli
+          - php-fpm
+          - php-mysql
+          - php-json
+          - php-opcache
+          - php-mbstring
+          - php-xml
+          - php-gd
+          - php-curl
         state: present
      
-    - name: Install php
+    - name: Install nginx
       become: true
       apt:
-        name: php
-        state: present
-     
-    - name: Install Apache-php
-      become: true
-      apt:
-        name: libapache2-mod-php
+        name: nginx 
         state: present
      
     
     - name: Install MySQL Server
       become: true
       apt:
-        name: mysql-server
+        name: 
+          - mysql-server
+          - python3-pymysql  
         state: present
     
-    - name: Install php-mysql
-      become: true
-      apt:
-        name: php-mysql
+    # Set MySQL root Password on Ansible/Ubuntu - https://linuxhint.com/set_mysql_root_password_ansible/ 
+    - name: Relax the MySQL root user
+      shell: sudo mysql -u root -e 'UPDATE mysql.user SET plugin="mysql_native_password"
+       WHERE user="root" AND host="localhost"'
+
+    - name: Flush Privileges
+      shell: sudo mysql -u root -e 'FLUSH PRIVILEGES'
+
+    - name: Create SQL user 
+      mysql_user:
+        login_host: 'localhost'
+        login_user: 'root'
+        login_password: ''
+        name: wp_user
+        password: wp_password
         state: present
