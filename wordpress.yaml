@@ -64,3 +64,29 @@
         login_password: 'wp_password'
         name: wp_db
         state: present
+    
+    - name: Check if wp-cli exists
+      stat: path="/bin/wp"
+      register: wpcli_exist
+      tags:
+        - always
+
+    - name: Updating wp-cli
+      become: true
+      shell: "/bin/wp cli update --yes"
+      when: wpcli_exist.stat.exists
+      tags:
+        - wp
+        - update
+    
+    - name: Download wp-cli
+      become: true
+      get_url:
+        url="https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar"
+        dest="/bin/wp"
+        force_basic_auth=yes
+        mode=0755
+      when: not wpcli_exist.stat.exists
+      tags:
+        - wp
+        - install  

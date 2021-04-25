@@ -17,9 +17,6 @@ Vagrant.configure("2") do |config|
 
 config.vm.provision "ansible_local" do |ansible|
     ansible.playbook = "wordpress.yaml"
-    #ansible.install_mode = "pip"
-    #ansible.pip_install_cmd = "sudo apt-get install -y python3-distutils && curl -s https://bootstrap.pypa.io/get-pip.py | sudo python3"
-    #ansible.verbose="v"
     ansible.extra_vars = { ansible_python_interpreter:"/usr/bin/python3.8" }
  end
 
