@@ -53,7 +53,8 @@
     
     # Set MySQL root Password on Ansible/Ubuntu - https://linuxhint.com/set_mysql_root_password_ansible/ 
     - name: Relax the MySQL root user
-      shell: sudo mysql -u root -e 'UPDATE mysql.user SET plugin="mysql_native_password"
+      become: true
+      shell: mysql -u root -e 'UPDATE mysql.user SET plugin="mysql_native_password"
        WHERE user="root" AND host="localhost"; FLUSH PRIVILEGES;'
 
        #    - name: Flush Privileges
@@ -105,7 +106,8 @@
       register: wp_installed
 
     - name: Install Wordpress
-      shell: "sudo wp core download --path=/var/www/html/wordpress --allow-root"
+      become: true
+      shell: "wp core download --path=/var/www/html/wordpress --allow-root"
       when: not wp_installed.stat.exists
 
         
@@ -116,10 +118,12 @@
         dest: /var/www/html/wordpress
 
     - name: Configure Wordpress Admin User
-      shell: 'sudo wp core install --url="192.168.50.2" --title="Blogging Platform" --admin_user=admin --admin_email=danpal@example.com --admin_password="!2three456." --path=/var/www/html/wordpress --allow-root'
+      become: true
+      shell: 'wp core install --url="192.168.50.2" --title="Blogging Platform" --admin_user=admin --admin_email=danpal@example.com --admin_password="!2three456." --path=/var/www/html/wordpress --allow-root'
   
     - name: Activating twentynineteen wp theme
-      shell: 'sudo wp theme install twentynineteen --activate --path=/var/www/html/wordpress --allow-root'  
+      become: true
+      shell: 'wp theme install twentynineteen --activate --path=/var/www/html/wordpress --allow-root'  
 
     - name: Giving Write permissions to the Wordpress Folder
       become: true
