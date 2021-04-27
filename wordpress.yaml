@@ -54,14 +54,12 @@
     # Set MySQL root Password on Ansible/Ubuntu - https://linuxhint.com/set_mysql_root_password_ansible/ 
     - name: Relax the MySQL root user
       shell: sudo mysql -u root -e 'UPDATE mysql.user SET plugin="mysql_native_password"
-       WHERE user="root" AND host="localhost"'
+       WHERE user="root" AND host="localhost"; FLUSH PRIVILEGES;'
 
-    - name: Flush Privileges
-      shell: sudo mysql -u root -e 'FLUSH PRIVILEGES'
-
+       #    - name: Flush Privileges
+       #      shell: sudo mysql -u root -e 
     - name: Create SQL user 
       mysql_user:
-        login_host: 'localhost'
         login_user: 'root'
         login_password: ''
         name: wp_user
@@ -71,7 +69,6 @@
      
     - name: Create DB for wordpress
       mysql_db:
-        login_host: 'localhost'
         login_user: 'wp_user'
         login_password: 'wp_password'
         name: wp_db
@@ -111,13 +108,12 @@
       shell: "sudo wp core download --path=/var/www/html/wordpress --allow-root"
       when: not wp_installed.stat.exists
 
-    - name: Verifying if wp-config file exists
-      stat: path=/var/www/html/wordpress/wp-config.php
-      register: wp_configured
-
+        
     - name: Configure Wordpress DB Connection
-      shell: "sudo wp config create --dbname=wp_db --dbuser=wp_user --dbpass=wp_password --path=/var/www/html/wordpress --allow-root"
-      when: not wp_configured.stat.exists
+      become: true
+      copy:
+        src: /vagrant/wp-config.php
+        dest: /var/www/html/wordpress
 
     - name: Configure Wordpress Admin User
       shell: 'sudo wp core install --url="192.168.50.2" --title="Blogging Platform" --admin_user=admin --admin_email=danpal@example.com --admin_password="!2three456." --path=/var/www/html/wordpress --allow-root'
