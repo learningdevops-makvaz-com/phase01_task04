@@ -34,15 +34,55 @@
         mode: '0755'
     
     - name: Download WP
-      become_user: vagrant
-      command: wp core download --locale=en_US
-      args:
-        chdir: /home/vagrant/
+      get_url: 
+        url: https://wordpress.org/latest.zip
+        dest: /var/www
+    - name: Extract wp
+      unarchive: 
+        src: /var/www/wordpress-5.7.1.zip
+        dest: /var/www/
+    
+    - name: Copy over wordpress nginx config
+      copy:
+        src:  /vagrant/wordpress
+        dest: /etc/nginx/sites-available
 
-    - name: Create WP file 
+    - name: Link sites-available to enabled 
+      file:
+        state: link
+        src: /etc/nginx/sites-available/wordpress
+        dest: /etc/nginx/sites-enabled/wordpress
+    - name: Remove default symbolic link
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+    - name: Copy over wp-config
+      copy:
+        src: /vagrant/wp-config.php
+        dest: /var/www/wordpress
+    
+      # DB will return an error if the db already exists, need to ignore errors 
+    - name: Create wordpress DB using sql file
+      shell: 'mysql < wordpress.sql'
+      ignore_errors: yes
+      args:
+        chdir: /vagrant/
+
+    - name: Configure wp install with wp-cli
+      command: 'wp core install --url=192.168.50.2 --title="Game Player Magazine" --admin_user=admin --admin_password=!2three456. --admin_email=admin@test.com --path=/var/www/wordpress --allow-root'
+    - name: Setup wp theme
+      command: 'wp theme install twentysixteen --activate --path=/var/www/wordpress --allow-root'
+    
+    - name: Set ownership and group owner to www-data
       file:
         path: /var/www/wordpress
         state: directory 
+        recurse: yes
         owner: www-data
         group: www-data
         mode: 0755
+    
+    - name: Restart nginx service
+      service:
+        name: nginx
+        state: restarted
