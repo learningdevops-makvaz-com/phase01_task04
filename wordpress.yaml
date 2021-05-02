@@ -1,7 +1,48 @@
 ---
 - name: Deploy Wordpress
   hosts: all
+  become: yes
   tasks:
+    - name: Update system
+      apt:
+        update_cache: yes
 
-    - name: message to remove
-      command: echo 'Here you gonna put all tasks and roles that gonna be runing on the VM'
+    - name: Upgrade system
+      apt:
+        upgrade: dist  
+
+    - name: Install software 
+      apt:
+        name: 
+          - php-mysql 
+          - mysql-server 
+          - php-curl 
+          - php-gd 
+          - php-intl 
+          - php-mbstring 
+          - php-soap 
+          - php-xml 
+          - php-xmlrpc 
+          - php-zip 
+          - nginx 
+          - php7.4-fpm
+
+    - name: Install wp-cli 
+      get_url:
+        url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+        dest: /usr/local/bin/wp
+        mode: '0755'
+    
+    - name: Download WP
+      become_user: vagrant
+      command: wp core download --locale=en_US
+      args:
+        chdir: /home/vagrant/
+
+    - name: Create WP file 
+      file:
+        path: /var/www/wordpress
+        state: directory 
+        owner: www-data
+        group: www-data
+        mode: 0755
