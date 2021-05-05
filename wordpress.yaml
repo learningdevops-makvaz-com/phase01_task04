@@ -30,7 +30,10 @@
         - php-zip
           
     - name: Configure firewall
-      command: ufw allow 'Nginx Full'
+      ufw:
+        rule: allow
+        name: "Nginx Full"
+        state: enabled
     
     - name:
       template:
@@ -55,7 +58,6 @@
         password: "{{ mysql_password }}"
         login_user: root
         login_password: "{{ mysql_password }}"
-        login_host: "localhost"
         login_unix_socket: "/var/run/mysqld/mysqld.sock"
 
     - name: Remove all MYSQL anonymous users
@@ -75,10 +77,10 @@
 
     - name: Create new database
       mysql_db:
-        login_user: root
-        login_password: "{{ mysql_password }}"
         name: "wordpress"
         state: present
+        login_user: root
+        login_password: "{{ mysql_password }}"
 
     - name: Create WordPress user
       mysql_user:
@@ -100,7 +102,7 @@
         state: directory
       when: not wp_dir.stat.exists
 
-    - name: Check WordPress file existance name
+    - name: Check WordPress file existance
       stat:
         path: "/tmp/{{ wp_file }}"
       register: wp
