@@ -87,6 +87,6 @@
   handlers:
     - name: Restart Nginx
       ansible.builtin.service:
-        name: httpd
+        name: nginx
         state: restarted
 
