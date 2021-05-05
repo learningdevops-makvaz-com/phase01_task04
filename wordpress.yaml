@@ -77,6 +77,13 @@
         login_user: root
         login_password: "{{ mysql_password }}"
 
+    - name: Creates directory
+      file:
+        path: /var/www/wordpress
+        state: directory
+
+    
+
   handlers:
     - name: Restart Nginx
       ansible.builtin.service:
