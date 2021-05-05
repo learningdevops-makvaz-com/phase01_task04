@@ -14,7 +14,7 @@
 
     - name: Install packages
       apt:
-        name: ['nginx']
+        name: ['python3-mysqldb', 'nginx', 'mysql-server', 'php-fpm', 'php-mysql', 'php-curl', 'php-gd', 'php-intl', 'php-mbstring', 'php-soap', 'php-xml', 'php-xmlrpc', 'php-zip']
           
     - name: Configure firewall
       command: ufw allow 'Nginx Full'
@@ -42,8 +42,50 @@
         name: nginx
         state: started  
 
+    - name: Set root password in MYSQL
+      mysql_user:
+        name: root
+        password: "{{ mysql_password }}"
+        login_user: root
+        login_password: "{{ mysql_password }}"
+        login_host: "localhost"
+        login_unix_socket: "/var/run/mysqld/mysqld.sock"
+
+    - name: Remove all MYSQL anonymous users
+      mysql_user:
+        name: ''
+        host_all: yes
+        state: absent
+        login_user: root
+        login_password: "{{ mysql_password }}"
+
+    
+    - name: Remove MySQL test database
+      mysql_db:
+        name: test
+        state: absent
+        login_user: root
+        login_password: "{{ mysql_password }}"
+
+    - name: Create new database
+      mysql_db:
+        login_user: root
+        login_password: "{{ mysql_password }}"
+        name: "wordpress"
+        state: present
+
+    - name: Create WordPress user
+      mysql_user:
+        name: "wordpressuser"
+        password: "{{ wp_database_password }}"
+        priv: "*.*:ALL,GRANT"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_password }}"
+
   handlers:
     - name: Restart Nginx
       ansible.builtin.service:
         name: httpd
         state: restarted
+
