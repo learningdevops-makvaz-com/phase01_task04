@@ -130,12 +130,6 @@
       shell: |
         chmod +x /tmp/{{ wp_cli_file }} 
         mv /tmp/{{ wp_cli_file }} /usr/local/bin/wp
-    
-    #- name: Add WP-CLI to /bin
-    #  shell: mv /tmp/{{ wp_cli_file }} /usr/local/bin/wp
-    
-    # - name: Change to WordPress directory
-    #   shell: cd /var/www/wordpress
 
     - name: Configure WordPress
       shell: |
