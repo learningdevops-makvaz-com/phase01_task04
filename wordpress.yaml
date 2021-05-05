@@ -76,7 +76,7 @@
         login_user: root
         login_password: "{{ mysql_password }}"
 
-    - name: Creates directory
+    - name: Create directory
       file:
         path: "/var/www/wordpress"
         state: directory
@@ -89,12 +89,19 @@
     - name: Extract WordPress
       unarchive:
         src: "/tmp/wordpress-5.7.1.tar.gz"
-        dest: "/var/www/wordpress"
+        dest: "/var/www/"
         
     - name: Copy wp-config file to wordpress directory
       copy:
-        src: /vagrant/wp-config.php
-        dest: /var/www/wordpress/wp-config.php 
+        src: "/vagrant/wp-config.php"
+        dest: "/var/www/wordpress/wp-config.php"
+        
+    - name: Setup privileges
+      file: 
+        dest: "/var/www/wordpress" 
+        owner: www-data 
+        group: www-data 
+        recurse: yes
 
   handlers:
     - name: Restart Nginx
