@@ -52,8 +52,7 @@
         state: absent
         login_user: root
         login_password: "{{ mysql_password }}"
-
-    
+  
     - name: Remove MySQL test database
       mysql_db:
         name: test
@@ -79,10 +78,23 @@
 
     - name: Creates directory
       file:
-        path: /var/www/wordpress
+        path: "/var/www/wordpress"
         state: directory
 
-    
+    - name: Download WordPress zip
+      get_url:
+        url: "https://wordpress.org/wordpress-5.7.1.tar.gz"
+        dest: /tmp/
+
+    - name: Extract WordPress
+      unarchive:
+        src: "/tmp/wordpress-5.7.1.tar.gz"
+        dest: "/var/www/wordpress"
+        
+    - name: Copy wp-config file to wordpress directory
+      copy:
+        src: /vagrant/wp-config.php
+        dest: /var/www/wordpress/wp-config.php 
 
   handlers:
     - name: Restart Nginx
