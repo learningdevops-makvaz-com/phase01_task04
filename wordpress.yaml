@@ -29,19 +29,13 @@
         src: "/etc/nginx/sites-available/{{ wp_conf }}"  
         dest: "/etc/nginx/sites-enabled/{{ wp_conf }}"
         state: link
-      notify: Restart Nginx
 
     - name: Unlink default Nginx
       file:
         path: "/etc/nginx/sites-enabled/default"
         state: absent
       notify: Restart Nginx  
-
-    - name: Start nginx
-      service:
-        name: nginx
-        state: started  
-
+  
     - name: Set root password in MYSQL
       mysql_user:
         name: root
