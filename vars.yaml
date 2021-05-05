@@ -2,5 +2,5 @@
 mysql_password: "Qw9M#sL!B"
 wp_database_password: "password"
 wp_host: "192.168.50.2"
-wp_conf: "wordpress"
+wp_conf_dir: "wordpress"
 wp_file: "wordpress-5.7.1.tar.gz"

@@ -35,12 +35,12 @@
     - name:
       template:
         src: "/vagrant/nginx.conf.j2"
-        dest: "/etc/nginx/sites-available/{{ wp_conf }}"
+        dest: "/etc/nginx/sites-available/{{ wp_conf_dir }}"
 
     - name: Enable Nginx configuration
       file:
-        src: "/etc/nginx/sites-available/{{ wp_conf }}"  
-        dest: "/etc/nginx/sites-enabled/{{ wp_conf }}"
+        src: "/etc/nginx/sites-available/{{ wp_conf_dir }}"  
+        dest: "/etc/nginx/sites-enabled/{{ wp_conf_dir }}"
         state: link
 
     - name: Unlink default Nginx
@@ -91,7 +91,7 @@
 
     - name: Create directory
       file:
-        path: "/var/www/wordpress"
+        path: "/var/www/{{ wp_conf_dir }}"
         state: directory
 
     - name: Download WordPress zip
@@ -107,11 +107,11 @@
     - name: Copy wp-config file to wordpress directory
       copy:
         src: "/vagrant/wp-config.php"
-        dest: "/var/www/wordpress/wp-config.php"
+        dest: "/var/www/{{ wp_conf_dir }}/wp-config.php"
         
     - name: Setup privileges
       file: 
-        dest: "/var/www/wordpress" 
+        dest: "/var/www/{{ wp_conf_dir }}" 
         owner: www-data 
         group: www-data 
         recurse: yes
