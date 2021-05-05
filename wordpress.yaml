@@ -88,16 +88,28 @@
         state: present
         login_user: root
         login_password: "{{ mysql_password }}"
+    
+    - name: Check WordPress directory existance
+      stat:
+        path: "/var/www/{{ wp_conf_dir }}"
+      register: wp_dir
 
     - name: Create directory
       file:
         path: "/var/www/{{ wp_conf_dir }}"
         state: directory
+      when: not wp_dir.stat.exists
+
+    - name: Check WordPress file existance name
+      stat:
+        path: "/tmp/{{ wp_file }}"
+      register: wp
 
     - name: Download WordPress zip
       get_url:
         url: "https://wordpress.org/{{ wp_file }}"
         dest: /tmp/
+      when: not wp.stat.exists
 
     - name: Extract WordPress
       unarchive:
@@ -109,23 +121,33 @@
         src: "/vagrant/wp-config.php"
         dest: "/var/www/{{ wp_conf_dir }}/wp-config.php"
         
+    - name: Install WP-CLI
+      get_url:
+        url: "{{ wp_cli_url }}"
+        dest: /tmp/
+
+    - name: Set WP-CLI Permission
+      shell: |
+        chmod +x /tmp/{{ wp_cli_file }} 
+        mv /tmp/{{ wp_cli_file }} /usr/local/bin/wp
+    
+    #- name: Add WP-CLI to /bin
+    #  shell: mv /tmp/{{ wp_cli_file }} /usr/local/bin/wp
+    
+    # - name: Change to WordPress directory
+    #   shell: cd /var/www/wordpress
+
+    - name: Configure WordPress
+      shell: |
+        wp core install --url="192.168.50.2" --title="WordPress Setup" --admin_user=admin --admin_email=admin@test.com --admin_password="!2three456." --path=/var/www/wordpress --allow-root
+        wp theme install "twentynineteen" --activate --path=/var/www/wordpress --allow-root
+  
     - name: Setup privileges
       file: 
         dest: "/var/www/{{ wp_conf_dir }}" 
         owner: www-data 
         group: www-data 
         recurse: yes
-
-    - name: Download WP-CLI
-      get_url:
-        url: "{{ wp_cli_url }}"
-        dest: /tmp/
-        mode: 0644
-
-    - name: Install WP-CLI
-      command: mv /tmp/{{ wp_cli_file }} /usr/local/bin/wp
-      shell:
-        chdir: /var/www/{{ wp_conf_dir }}        
 
   handlers:
     - name: Restart Nginx
