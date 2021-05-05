@@ -83,12 +83,12 @@
 
     - name: Download WordPress zip
       get_url:
-        url: "https://wordpress.org/wordpress-5.7.1.tar.gz"
+        url: "https://wordpress.org/{{ wp_file }}"
         dest: /tmp/
 
     - name: Extract WordPress
       unarchive:
-        src: "/tmp/wordpress-5.7.1.tar.gz"
+        src: "/tmp/{{ wp_file }}"
         dest: "/var/www/"
         
     - name: Copy wp-config file to wordpress directory
@@ -108,4 +108,3 @@
       ansible.builtin.service:
         name: nginx
         state: restarted
-
