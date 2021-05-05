@@ -1,7 +1,49 @@
 ---
 - name: Deploy Wordpress
   hosts: all
-  tasks:
+  become: yes
+  vars_files:
+    - /vagrant/vars.yaml
 
-    - name: message to remove
-      command: echo 'Here you gonna put all tasks and roles that gonna be runing on the VM'
+  tasks:
+    - name: Update APT
+      apt:
+        update_cache: yes
+        cache_valid_time: 86400
+        upgrade: 'yes'        
+
+    - name: Install packages
+      apt:
+        name: ['nginx']
+          
+    - name: Configure firewall
+      command: ufw allow 'Nginx Full'
+    
+    - name:
+      template:
+        src: "/vagrant/nginx.conf.j2"
+        dest: "/etc/nginx/sites-available/{{ wp_conf }}"
+
+    - name: Enable Nginx configuration
+      file:
+        src: "/etc/nginx/sites-available/{{ wp_conf }}"  
+        dest: "/etc/nginx/sites-enabled/{{ wp_conf }}"
+        state: link
+      notify: Restart Nginx
+
+    - name: Unlink default Nginx
+      file:
+        path: "/etc/nginx/sites-enabled/default"
+        state: absent
+      notify: Restart Nginx  
+
+    - name: Start nginx
+      service:
+        name: nginx
+        state: started  
+
+  handlers:
+    - name: Restart Nginx
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
