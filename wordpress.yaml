@@ -90,17 +90,11 @@
         state: present
         login_user: root
         login_password: "{{ mysql_password }}"
-    
-    - name: Check WordPress directory existance
-      stat:
-        path: "/var/www/{{ wp_conf_dir }}"
-      register: wp_dir
 
     - name: Create directory
       file:
         path: "/var/www/{{ wp_conf_dir }}"
         state: directory
-      when: not wp_dir.stat.exists
 
     - name: Check WordPress file existance
       stat:
