@@ -96,16 +96,10 @@
         path: "/var/www/{{ wp_conf_dir }}"
         state: directory
 
-    - name: Check WordPress file existance
-      stat:
-        path: "/tmp/{{ wp_file }}"
-      register: wp
-
     - name: Download WordPress zip
       get_url:
         url: "https://wordpress.org/{{ wp_file }}"
-        dest: /tmp/
-      when: not wp.stat.exists
+        dest: "/tmp/{{ wp_file }}"
 
     - name: Extract WordPress
       unarchive:
