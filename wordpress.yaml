@@ -123,18 +123,17 @@
     - name: Install WP-CLI
       get_url:
         url: "{{ wp_cli_url }}"
-        dest: /tmp/
+        dest: "/usr/local/bin/wp"
+        mode: 0755
 
-    - name: Set WP-CLI Permission
-      shell: |
-        chmod +x /tmp/{{ wp_cli_file }} 
-        mv /tmp/{{ wp_cli_file }} /usr/local/bin/wp
-
-    - name: Configure WordPress
-      shell: |
-        wp core install --url="192.168.50.2" --title="WordPress Setup" --admin_user=admin --admin_email=admin@test.com --admin_password="!2three456." --path=/var/www/wordpress --allow-root
-        wp theme install "twentynineteen" --activate --path=/var/www/wordpress --allow-root
-  
+    - name: Change directory to /var/www/wordpress and install WP
+      command: wp core install --url="192.168.50.2" --title="WordPress Setup" --admin_user=admin --admin_email=admin@test.com --admin_password="!2three456." --path=/var/www/wordpress --allow-root
+      args:
+        chdir: /var/www/wordpress
+   
+    - name: Configure WordPress theme
+      command: wp theme install "twentynineteen" --activate --path=/var/www/wordpress --allow-root
+ 
     - name: Setup privileges
       file: 
         dest: "/var/www/{{ wp_conf_dir }}" 
