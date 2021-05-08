@@ -29,10 +29,19 @@
         - php-xmlrpc
         - php-zip
           
-    - name: Configure firewall
+    - name: Configure Nginx firewall
       ufw:
         rule: allow
         name: "Nginx Full"
+        
+    - name: Configure SSH firewall
+      ufw:
+        rule: allow
+        name: "OpenSSH"
+      notify: Reload firewall
+
+    - name: Enable firewall
+      ufw:
         state: enabled
     
     - name:
@@ -138,3 +147,7 @@
       ansible.builtin.service:
         name: nginx
         state: restarted
+
+    - name: Reload firewall
+      ufw:
+        state: reloaded
