@@ -44,7 +44,7 @@
       ufw:
         state: enabled
     
-    - name:
+    - name: Configure Nginx
       template:
         src: "/vagrant/nginx.conf.j2"
         dest: "/etc/nginx/sites-available/{{ wp_conf_dir }}"
