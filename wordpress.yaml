@@ -94,7 +94,7 @@
     - name: Create WordPress user
       mysql_user:
         name: "wordpressuser"
-        password: "{{ wp_database_password }}"
+        password: "{{ wp_db_password }}"
         priv: "*.*:ALL,GRANT"
         state: present
         login_user: root
@@ -121,11 +121,11 @@
         dest: "/var/www/"
       when: not extracted.stat.exists
         
-    - name: Copy wp-config file to wordpress directory
-      copy:
-        src: "/vagrant/wp-config.php"
-        dest: "/var/www/{{ wp_conf_dir }}/wp-config.php"
-        
+    - name: Configure wp-config.php
+      template:
+        src: "/vagrant/wp-config.php.j2"
+        dest: "/var/www/{{ wp_conf_dir }}/wp-config.php"     
+    
     - name: Install WP-CLI
       get_url:
         url: "{{ wp_cli_url }}"
@@ -133,12 +133,12 @@
         mode: 0755
 
     - name: Change directory to /var/www/wordpress and install WP
-      command: wp core install --url="192.168.50.2" --title="WordPress Setup" --admin_user=admin --admin_email=admin@test.com --admin_password="!2three456." --path=/var/www/wordpress --allow-root
+      command: wp core install --url="{{ wp_host }}" --title="{{ wp_title }}" --admin_user="{{ wp_admin_user }}" --admin_email={{ wp_admin_email }} --admin_password="{{ wp_admin_password }}" --path="/var/www/{{ wp_conf_dir }}" --allow-root
       args:
-        chdir: /var/www/wordpress
+        chdir: "/var/www/{{ wp_conf_dir }}"
    
     - name: Configure WordPress theme
-      command: wp theme install "twentynineteen" --activate --path=/var/www/wordpress --allow-root
+      command: wp theme install "{{ wp_theme }}" --activate --path="/var/www/{{ wp_conf_dir }}" --allow-root
  
     - name: Setup privileges
       file: 
