@@ -110,16 +110,11 @@
         url: "https://wordpress.org/{{ wp_file }}"
         dest: "/tmp/{{ wp_file }}"
 
-    - name: Check for extracted WordPress
-      stat: 
-        path: "/var/www/{{ wp_conf_dir }}/wp-login.php"
-      register: extracted
-
     - name: Extract WordPress
       unarchive:
         src: "/tmp/{{ wp_file }}"
         dest: "/var/www/"
-      when: not extracted.stat.exists
+        creates: "/var/www/{{ wp_conf_dir }}/wp-login.php"
         
     - name: Configure wp-config.php
       template:
