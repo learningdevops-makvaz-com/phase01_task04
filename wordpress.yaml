@@ -3,7 +3,7 @@
   hosts: all
   become: yes
   vars_files:
-    - /vagrant/vars.yaml
+    - /vagrant/variables.yaml
 
   tasks:
     - name: Update APT
