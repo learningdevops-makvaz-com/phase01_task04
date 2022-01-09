@@ -1,16 +1,16 @@
 <?php
 
 /** The name of the database for WordPress */
-define( 'DB_NAME', 'wpDB' );
+define( 'DB_NAME', '{{ db_name }}' );
 
 /** MySQL database username */
-define( 'DB_USER', 'berna' );
+define( 'DB_USER', '{{ db_user }}' );
 
 /** MySQL database password */
-define( 'DB_PASSWORD', 'Berna123' );
+define( 'DB_PASSWORD', '{{ db_password }}' );
 
 /** MySQL hostname */
-define( 'DB_HOST', 'localhost' );
+define( 'DB_HOST', '{{ db_host }}' );
 
 /** Database Charset to use in creating database tables. */
 define( 'DB_CHARSET', 'utf8' );

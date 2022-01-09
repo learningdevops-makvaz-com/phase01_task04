@@ -30,26 +30,7 @@
       ufw:
         rule: allow
         name: "Nginx Full"
-        
-    - name: Create SSL-Certificate
-      shell: |
-            openssl req -x509 -newkey rsa:2048 -days 365 -nodes \
-                -subj "/C=AR/ST=BSAS/L=BSAS/O=WordPress/OU=WP/CN=192.168.50.2" \
-            -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
-            openssl dhparam -out /etc/nginx/dhparam.pem 2048
     
-    - name: Copy Conf. Snippets pointing SSL key and certificate
-      copy:
-        src: "/vagrant/self-signed.conf"
-        dest: "/etc/nginx/snippets/"
-        remote_src: yes
-        
-    - name: Copy ssl-params
-      copy:
-        src: "/vagrant/ssl-params.conf"
-        dest: "/etc/nginx/snippets/"
-        remote_src: yes
-        
     - name: Copy Nginx config       
       template:
         src: "/vagrant/nginx.conf.j2"
@@ -75,7 +56,11 @@
       service:
         name: mysql
         state: restarted
-     
+    #- name: Download Wordpress        
+    #  get_url:
+    #    url: https://wordpress.org/latest.tar.gz
+    #    dest: /var/www/
+        
     - name: Extract Wordpress file        
       unarchive:
         src: "{{ url_wordpress }}"

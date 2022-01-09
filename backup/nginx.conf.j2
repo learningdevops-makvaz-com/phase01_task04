@@ -2,8 +2,8 @@ server {
     listen 80;
     listen [::]:80;
 
-    server_name 192.168.50.2;
-    root /var/www/wordpress;
+    server_name {{ wp_iphost }};
+    root /var/www/{{ wp_root_dir }};
 
     index index.php index.html index.htm;
 

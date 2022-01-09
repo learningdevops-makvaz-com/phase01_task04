@@ -30,35 +30,16 @@
       ufw:
         rule: allow
         name: "Nginx Full"
-        
-    - name: Create SSL-Certificate
-      shell: |
-            openssl req -x509 -newkey rsa:2048 -days 365 -nodes \
-                -subj "/C=AR/ST=BSAS/L=BSAS/O=WordPress/OU=WP/CN=192.168.50.2" \
-            -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
-            openssl dhparam -out /etc/nginx/dhparam.pem 2048
     
-    - name: Copy Conf. Snippets pointing SSL key and certificate
-      copy:
-        src: "/vagrant/self-signed.conf"
-        dest: "/etc/nginx/snippets/"
-        remote_src: yes
-        
-    - name: Copy ssl-params
-      copy:
-        src: "/vagrant/ssl-params.conf"
-        dest: "/etc/nginx/snippets/"
-        remote_src: yes
-        
     - name: Copy Nginx config       
-      template:
-        src: "/vagrant/nginx.conf.j2"
-        dest: "/etc/nginx/sites-available/{{ wp_root_dir }}"
+      copy:
+        src: "/vagrant/wordpressCfg.conf.j2"
+        dest: "/etc/nginx/sites-available"
         
     - name: Symbolic link on Wordpress nginx configuration file      
       file:
-        src: "/etc/nginx/sites-available/{{ wp_root_dir }}"
-        dest: "/etc/nginx/sites-enabled/{{ wp_root_dir }}"
+        src: "/etc/nginx/sites-available/wordpressCfg.conf.j2"
+        dest: "/etc/nginx/sites-enabled/wordpressCfg.conf"
         state: link
         
     - name: Unlink Default nginx config      
@@ -75,7 +56,11 @@
       service:
         name: mysql
         state: restarted
-     
+    #- name: Download Wordpress        
+    #  get_url:
+    #    url: https://wordpress.org/latest.tar.gz
+    #    dest: /var/www/
+        
     - name: Extract Wordpress file        
       unarchive:
         src: "{{ url_wordpress }}"
@@ -83,7 +68,7 @@
         remote_src: yes
         
     - name: Copy wordpress config php file (wp database connection)        
-      template:
+      copy:
         src: "/vagrant/wp-config.php.j2"
         dest: "/var/www/{{ wp_root_dir }}/wp-config.php"
         force: yes
@@ -103,8 +88,17 @@
         dest: /usr/local/bin/wp
         mode: 0755
     
-    - name: Install WP-CLI     
-      shell: 'wp core install --url="{{ wp_iphost }}" --title="{{ title }}" --admin_user="{{ wp_admin_user }}" --admin_email="{{ wp_admin_mail }}" --admin_password="{{ wp_admin_password }}" --path="/var/www/{{ wp_root_dir }}" --allow-root'
+    #- name: Install WP-CLI     
+    #  shell: 'wp core install --url="{{ wp_iphost }}" --title="{{ title }}" --admin_user="{{ wp_admin_user }}" --admin_email="{{ wp_admin_mail }}" --admin_password="{{ wp_admin_password }}" --path="/var/www/{{ wp_root_dir }}" --allow-root'
+    - name: Install WP-CLI
+      command: wp core install --url="{{ wp_iphost }}" --title="{{ title }}" --admin_user="{{ wp_admin_user }}" --admin_email={{ wp_admin_mail }} --admin_password="{{ wp_admin_password }}" --path="/var/www/{{ wp_root_dir }}" --allow-root
+      args:
+        chdir: "/var/www/{{ wp_root_dir }}"
       
     - name: Install Theme     
       shell: 'wp theme install twentynineteen --activate --path="/var/www/{{ wp_root_dir }}" --allow-root'
+    
+    - name: Restart Nginx  
+      service:
+        name: nginx
+        state: restarted

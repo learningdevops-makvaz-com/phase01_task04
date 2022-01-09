@@ -1,1 +1,3 @@
 .vagrant/
+.backup/
+.version-https/
