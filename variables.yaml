@@ -8,6 +8,7 @@ db_name: "wpDB"
 db_user: "berna"
 db_password: "Asd123"
 db_host: "localhost"
+mysql_password: "P4SsW0rd!$"
 
 #Nginx & Wordpress variables
 wp_iphost: "192.168.50.2"

@@ -16,6 +16,7 @@
         name:
             - nginx
             - mysql-server
+            - python3-mysqldb
             - php7.4-cli
             - php7.4-fpm
             - php7.4-mysql
@@ -66,11 +67,27 @@
         path: /etc/nginx/sites-enabled/default
         state: absent
         
-    - name: Create Wordpress Database   
-      shell: 'mysql < wpDB.sql'
-      args:
-        chdir: /vagrant/
+    #- name: Create Wordpress Database   
+    #  shell: 'mysql < wpDB.sql'
+    #  args:
+    #    chdir: /vagrant/
     
+    - name: Create WP Database
+      mysql_db:
+        name: "{{ db_name }}"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_password }}"
+    
+    - name: Create WordPress Database user
+      mysql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        priv: "*.*:ALL,GRANT"
+        state: present
+        login_user: root
+        login_password: "{{ mysql_password }}"
+        
     - name: Restart MySQL  
       service:
         name: mysql
@@ -108,3 +125,8 @@
       
     - name: Install Theme     
       shell: 'wp theme install twentynineteen --activate --path="/var/www/{{ wp_root_dir }}" --allow-root'
+    
+    - name: Restart MySQL  
+      service:
+        name: nginx
+        state: restarted
