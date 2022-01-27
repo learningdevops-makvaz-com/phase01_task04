@@ -1,7 +1,6 @@
 ---
 - name: Deploy Wordpress
   hosts: all
-  become: yes
   vars_files:
     - /vagrant/variables.yaml
     
