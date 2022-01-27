@@ -1,4 +1,10 @@
 ---
+#User variables
+user_name: "ber"
+user_home: "/home/ber"
+user_shell: "/bin/bash"
+user_pwd: 'test01'
+
 #URL variables
 url_wordpress: "https://wordpress.org/latest.tar.gz"
 url_wpcli: "https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar"
@@ -17,3 +23,4 @@ title: "Test01"
 wp_admin_user: "admin"
 wp_admin_password: "!2three456."
 wp_admin_mail: "admin32323@hotmail.com"
+

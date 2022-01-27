@@ -6,10 +6,22 @@
     - /vagrant/variables.yaml
     
   tasks:
-    - name: Update & Upgrade the System
+    - name: Create a login user
+      become: yes
+      user:
+       name: "{{ user_name }}" 
+       password: "{{ user_pwd | password_hash('sha512') }}"
+       groups: 
+        - sudo
+       state: present
+       shell: "{{ user_shell }}"        
+       system: no             
+       createhome: yes        
+       home: "{{ user_home }}" 
+      
+    - name: Update the System
       apt:
         update_cache: yes
-        upgrade: yes    
     
     - name: Install LEMP Packages
       apt:
@@ -34,11 +46,13 @@
         
     - name: Create SSL-Certificate
       shell: |
-            openssl req -x509 -newkey rsa:2048 -days 365 -nodes \
-                -subj "/C=AR/ST=BSAS/L=BSAS/O=WordPress/OU=WP/CN=192.168.50.2" \
-            -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
-            openssl dhparam -out /etc/nginx/dhparam.pem 2048
-    
+                if [ ! -f /etc/ssl/certs/nginx-selfsigned.crt ]; then
+                    openssl req -x509 -newkey rsa:2048 -days 365 -nodes \
+                    -subj "/C=AR/ST=BSAS/L=BSAS/O=WordPress/OU=WP/CN={{ wp_iphost }}" \
+                    -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
+                    openssl dhparam -out /etc/nginx/dhparam.pem 2048
+                fi
+        
     - name: Copy Conf. Snippets pointing SSL key and certificate
       copy:
         src: "/vagrant/self-signed.conf"
@@ -67,11 +81,6 @@
         path: /etc/nginx/sites-enabled/default
         state: absent
         
-    #- name: Create Wordpress Database   
-    #  shell: 'mysql < wpDB.sql'
-    #  args:
-    #    chdir: /vagrant/
-    
     - name: Create WP Database
       mysql_db:
         name: "{{ db_name }}"
@@ -83,16 +92,11 @@
       mysql_user:
         name: "{{ db_user }}"
         password: "{{ db_password }}"
-        priv: "*.*:ALL,GRANT"
+        priv: "wpDB.*:ALL,GRANT"
         state: present
         login_user: root
         login_password: "{{ mysql_password }}"
         
-    - name: Restart MySQL  
-      service:
-        name: mysql
-        state: restarted
-     
     - name: Extract Wordpress file        
       unarchive:
         src: "{{ url_wordpress }}"
@@ -113,6 +117,15 @@
         owner: www-data
         group: www-data
         mode: 0755
+    
+    - name: Setup 777 permissions to wp-content, so upload works
+      file:
+        path: /var/www/{{ wp_root_dir }}
+        state: directory
+        recurse: yes
+        owner: www-data
+        group: www-data
+        mode: 0777
             
     - name: Download WP-Cli file      
       get_url:
@@ -121,14 +134,14 @@
         mode: 0755
     
     - name: Install WP-CLI     
-      shell: 'wp core install --url="{{ wp_iphost }}" --title="{{ title }}" --admin_user="{{ wp_admin_user }}" --admin_email="{{ wp_admin_mail }}" --admin_password="{{ wp_admin_password }}" --path="/var/www/{{ wp_root_dir }}" --allow-root'
+      shell: 'sudo -u ber -i -- wp core install --url="{{ wp_iphost }}" --title="{{ title }}" --admin_user="{{ wp_admin_user }}" --admin_email="{{ wp_admin_mail }}" --admin_password="{{ wp_admin_password }}" --path="/var/www/{{ wp_root_dir }}"'
       
     - name: Install Theme     
-      shell: 'wp theme install twentynineteen --activate --path="/var/www/{{ wp_root_dir }}" --allow-root'
+      shell: 'sudo -u ber -i -- wp theme install twentynineteen --activate --path="/var/www/{{ wp_root_dir }}"'
     
     - name: Restart MySQL  
       service:
-        name: nginx
+        name: mysql
         state: restarted
     
     - name: Restart Nginx  
