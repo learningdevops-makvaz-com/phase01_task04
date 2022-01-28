@@ -1,10 +1,25 @@
 ---
 - name: Deploy Wordpress
   hosts: all
+  become: yes
   vars_files:
     - /vagrant/variables.yaml
     
   tasks:
+    #Can't make sudo ber user, to be able to execute commands like apt-get update without entering the user pw
+    #- name: New group
+    #  become: yes
+    #  group:
+    #   name: sudousers
+    #   state: present
+       
+    #- name: sudo without password for sudousers group
+    #  become: yes
+    #  copy:
+    #    content: '%sudousers ALL=(ALL:ALL) NOPASSWD:ALL'
+    #    dest: /etc/sudoers.d/sudousers_nopasswd
+    #    mode: 0440
+        
     - name: Create a login user
       become: yes
       user:
@@ -12,9 +27,10 @@
        password: "{{ user_pwd | password_hash('sha512') }}"
        groups: 
         - sudo
+       append: yes
        state: present
        shell: "{{ user_shell }}"        
-       system: no             
+       system: yes             
        createhome: yes        
        home: "{{ user_home }}" 
       
@@ -38,20 +54,23 @@
             - php7.4-gd
             - php7.4-curl
             
-    - name: Allow NGINX on Firewall   
+    - name: Allow NGINX on Firewall 
       ufw:
         rule: allow
         name: "Nginx Full"
-        
+    
+    - name: Check if SSL-Certificate exists
+      stat: path="/etc/ssl/certs/nginx-selfsigned.crt"
+      register: sslcrt_exists
+     
     - name: Create SSL-Certificate
       shell: |
-                if [ ! -f /etc/ssl/certs/nginx-selfsigned.crt ]; then
-                    openssl req -x509 -newkey rsa:2048 -days 365 -nodes \
-                    -subj "/C=AR/ST=BSAS/L=BSAS/O=WordPress/OU=WP/CN={{ wp_iphost }}" \
-                    -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
-                    openssl dhparam -out /etc/nginx/dhparam.pem 2048
-                fi
-        
+                openssl req -x509 -newkey rsa:2048 -days 365 -nodes \
+                -subj "/C=AR/ST=BSAS/L=BSAS/O=WordPress/OU=WP/CN={{ wp_iphost }}" \
+                -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
+                openssl dhparam -out /etc/nginx/dhparam.pem 2048
+      when: sslcrt_exists.stat.exists == false
+      
     - name: Copy Conf. Snippets pointing SSL key and certificate
       copy:
         src: "/vagrant/self-signed.conf"
@@ -91,16 +110,21 @@
       mysql_user:
         name: "{{ db_user }}"
         password: "{{ db_password }}"
-        priv: "wpDB.*:ALL,GRANT"
+        priv: "{{ db_name }}.*:ALL,GRANT"
         state: present
         login_user: root
         login_password: "{{ mysql_password }}"
-        
+    
+    - name: Check if WP dir exists
+      stat: path="/var/www/{{ wp_root_dir }}"
+      register: wp_dir_exists
+      
     - name: Extract Wordpress file        
       unarchive:
         src: "{{ url_wordpress }}"
         dest: "/var/www/"
         remote_src: yes
+      when: not wp_dir_exists.stat.exists
         
     - name: Copy wordpress config php file (wp database connection)        
       template:
@@ -110,32 +134,37 @@
     
     - name: Setup owner and group privileges to www-data and 755 permissions.       
       file:
-        path: /var/www/{{ wp_root_dir }}
+        path: "/var/www/{{ wp_root_dir }}"
         state: directory
         recurse: yes
         owner: www-data
         group: www-data
         mode: 0755
     
-    - name: Setup 777 permissions to wp-content, so upload works
+    - name: Setup rw- permissions to wp-content, so upload works
       file:
-        path: /var/www/{{ wp_root_dir }}
+        path: "/var/www/{{ wp_root_dir }}/wp-content"
         state: directory
         recurse: yes
-        owner: www-data
-        group: www-data
-        mode: 0777
-            
+        mode: 0766
+    
+    - name: Check if WP-CLI dir exists
+      stat: path="/usr/local/bin/wp"
+      register: wp_cli_exists
+      
     - name: Download WP-Cli file      
       get_url:
         url: "{{ url_wpcli }}"
         dest: /usr/local/bin/wp
         mode: 0755
+      when: not wp_cli_exists.stat.exists
     
-    - name: Install WP-CLI     
+    - name: Install WP-CLI 
+      #become_user: ber
       shell: 'sudo -u ber -i -- wp core install --url="{{ wp_iphost }}" --title="{{ title }}" --admin_user="{{ wp_admin_user }}" --admin_email="{{ wp_admin_mail }}" --admin_password="{{ wp_admin_password }}" --path="/var/www/{{ wp_root_dir }}"'
       
-    - name: Install Theme     
+    - name: Install Theme
+      #become_user: ber
       shell: 'sudo -u ber -i -- wp theme install twentynineteen --activate --path="/var/www/{{ wp_root_dir }}"'
     
     - name: Restart MySQL  
