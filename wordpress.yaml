@@ -6,13 +6,6 @@
     - /vagrant/variables.yaml
     
   tasks:
-    #Can't make sudo ber user, to be able to execute commands like apt-get update without entering the user pw
-    - name: Install acl package
-      become: yes
-      apt:
-        name:
-            - acl
-            
     - name: New group
       become: yes
       group:
@@ -62,6 +55,7 @@
             - php7.4-xml
             - php7.4-gd
             - php7.4-curl
+            - acl
             
     - name: Allow NGINX on Firewall 
       become: yes
