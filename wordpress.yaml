@@ -1,24 +1,30 @@
 ---
 - name: Deploy Wordpress
   hosts: all
-  become: yes
+  #become: yes
   vars_files:
     - /vagrant/variables.yaml
     
   tasks:
     #Can't make sudo ber user, to be able to execute commands like apt-get update without entering the user pw
-    #- name: New group
-    #  become: yes
-    #  group:
-    #   name: sudousers
-    #   state: present
+    - name: Install acl package
+      become: yes
+      apt:
+        name:
+            - acl
+            
+    - name: New group
+      become: yes
+      group:
+       name: sudousers
+       state: present
        
-    #- name: sudo without password for sudousers group
-    #  become: yes
-    #  copy:
-    #    content: '%sudousers ALL=(ALL:ALL) NOPASSWD:ALL'
-    #    dest: /etc/sudoers.d/sudousers_nopasswd
-    #    mode: 0440
+    - name: sudo without password for sudousers group
+      become: yes
+      copy:
+        content: 'sudousers  ALL=(ALL:ALL)   NOPASSWD: ALL'
+        dest: /etc/sudoers.d/sudousers
+        mode: 0440
         
     - name: Create a login user
       become: yes
@@ -27,6 +33,7 @@
        password: "{{ user_pwd | password_hash('sha512') }}"
        groups: 
         - sudo
+        - sudousers
        append: yes
        state: present
        shell: "{{ user_shell }}"        
@@ -35,10 +42,12 @@
        home: "{{ user_home }}" 
       
     - name: Update the System
+      become: yes
       apt:
         update_cache: yes
     
     - name: Install LEMP Packages
+      become: yes
       apt:
         name:
             - nginx
@@ -55,15 +64,18 @@
             - php7.4-curl
             
     - name: Allow NGINX on Firewall 
+      become: yes
       ufw:
         rule: allow
         name: "Nginx Full"
     
     - name: Check if SSL-Certificate exists
+      become: yes
       stat: path="/etc/ssl/certs/nginx-selfsigned.crt"
       register: sslcrt_exists
      
     - name: Create SSL-Certificate
+      become: yes
       shell: |
                 openssl req -x509 -newkey rsa:2048 -days 365 -nodes \
                 -subj "/C=AR/ST=BSAS/L=BSAS/O=WordPress/OU=WP/CN={{ wp_iphost }}" \
@@ -72,34 +84,40 @@
       when: sslcrt_exists.stat.exists == false
       
     - name: Copy Conf. Snippets pointing SSL key and certificate
+      become: yes
       copy:
         src: "/vagrant/self-signed.conf"
         dest: "/etc/nginx/snippets/"
         remote_src: yes
         
     - name: Copy ssl-params
+      become: yes
       copy:
         src: "/vagrant/ssl-params.conf"
         dest: "/etc/nginx/snippets/"
         remote_src: yes
         
-    - name: Copy Nginx config       
+    - name: Copy Nginx config  
+      become: yes    
       template:
         src: "/vagrant/nginx.conf.j2"
         dest: "/etc/nginx/sites-available/{{ wp_root_dir }}"
         
-    - name: Symbolic link on Wordpress nginx configuration file      
+    - name: Symbolic link on Wordpress nginx configuration file   
+      become: yes    
       file:
         src: "/etc/nginx/sites-available/{{ wp_root_dir }}"
         dest: "/etc/nginx/sites-enabled/{{ wp_root_dir }}"
         state: link
         
-    - name: Unlink Default nginx config      
+    - name: Unlink Default nginx config
+      become: yes    
       file:
         path: /etc/nginx/sites-enabled/default
         state: absent
         
     - name: Create WP Database
+      become: yes
       mysql_db:
         name: "{{ db_name }}"
         state: present
@@ -107,6 +125,7 @@
         login_password: "{{ mysql_password }}"
     
     - name: Create WordPress Database user
+      become: yes
       mysql_user:
         name: "{{ db_user }}"
         password: "{{ db_password }}"
@@ -116,23 +135,27 @@
         login_password: "{{ mysql_password }}"
     
     - name: Check if WP dir exists
+      become: yes
       stat: path="/var/www/{{ wp_root_dir }}"
       register: wp_dir_exists
       
-    - name: Extract Wordpress file        
+    - name: Extract Wordpress file
+      become: yes    
       unarchive:
         src: "{{ url_wordpress }}"
         dest: "/var/www/"
         remote_src: yes
       when: not wp_dir_exists.stat.exists
         
-    - name: Copy wordpress config php file (wp database connection)        
+    - name: Copy wordpress config php file (wp database connection)  
+      become: yes    
       template:
         src: "/vagrant/wp-config.php.j2"
         dest: "/var/www/{{ wp_root_dir }}/wp-config.php"
         force: yes
     
-    - name: Setup owner and group privileges to www-data and 755 permissions.       
+    - name: Setup owner and group privileges to www-data and 755 permissions.
+      become: yes    
       file:
         path: "/var/www/{{ wp_root_dir }}"
         state: directory
@@ -142,6 +165,7 @@
         mode: 0755
     
     - name: Setup rw- permissions to wp-content, so upload works
+      become: yes
       file:
         path: "/var/www/{{ wp_root_dir }}/wp-content"
         state: directory
@@ -149,10 +173,12 @@
         mode: 0766
     
     - name: Check if WP-CLI dir exists
+      become: yes
       stat: path="/usr/local/bin/wp"
       register: wp_cli_exists
       
-    - name: Download WP-Cli file      
+    - name: Download WP-Cli file
+      become: yes    
       get_url:
         url: "{{ url_wpcli }}"
         dest: /usr/local/bin/wp
@@ -160,19 +186,22 @@
       when: not wp_cli_exists.stat.exists
     
     - name: Install WP-CLI 
-      #become_user: ber
-      shell: 'sudo -u ber -i -- wp core install --url="{{ wp_iphost }}" --title="{{ title }}" --admin_user="{{ wp_admin_user }}" --admin_email="{{ wp_admin_mail }}" --admin_password="{{ wp_admin_password }}" --path="/var/www/{{ wp_root_dir }}"'
+      become_user: ber
+      shell: 'wp core install --url="{{ wp_iphost }}" --title="{{ title }}" --admin_user="{{ wp_admin_user }}" --admin_email="{{ wp_admin_mail }}" --admin_password="{{ wp_admin_password }}" --path="/var/www/{{ wp_root_dir }}"'
+      #sudo -u ber -i --
       
     - name: Install Theme
-      #become_user: ber
-      shell: 'sudo -u ber -i -- wp theme install twentynineteen --activate --path="/var/www/{{ wp_root_dir }}"'
+      become_user: ber
+      shell: 'wp theme install twentynineteen --activate --path="/var/www/{{ wp_root_dir }}"'
     
-    - name: Restart MySQL  
+    - name: Restart MySQL 
+      become: yes    
       service:
         name: mysql
         state: restarted
     
-    - name: Restart Nginx  
+    - name: Restart Nginx
+      become: yes
       service:
         name: nginx
         state: restarted
