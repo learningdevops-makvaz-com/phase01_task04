@@ -63,10 +63,10 @@
         rule: allow
         name: "Nginx Full"
     
-    - name: Check if SSL-Certificate exists
-      become: yes
-      stat: path="/etc/ssl/certs/nginx-selfsigned.crt"
-      register: sslcrt_exists
+    #- name: Check if SSL-Certificate exists
+    #  become: yes
+    #  stat: path="/etc/ssl/certs/nginx-selfsigned.crt"
+    #  register: sslcrt_exists
      
     - name: Create SSL-Certificate
       become: yes
@@ -75,7 +75,9 @@
                 -subj "/C=AR/ST=BSAS/L=BSAS/O=WordPress/OU=WP/CN={{ wp_iphost }}" \
                 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
                 openssl dhparam -out /etc/nginx/dhparam.pem 2048
-      when: sslcrt_exists.stat.exists == false
+      args:
+        creates: /etc/nginx/dhparam.pem
+      #when: sslcrt_exists.stat.exists == false
       
     - name: Copy Conf. Snippets pointing SSL key and certificate
       become: yes
@@ -109,6 +111,7 @@
       file:
         path: /etc/nginx/sites-enabled/default
         state: absent
+      notify: Reload Nginx
         
     - name: Create WP Database
       become: yes
@@ -127,7 +130,8 @@
         state: present
         login_user: root
         login_password: "{{ mysql_password }}"
-    
+      notify: Reload Mysql
+      
     - name: Check if WP dir exists
       become: yes
       stat: path="/var/www/{{ wp_root_dir }}"
@@ -158,13 +162,13 @@
         group: www-data
         mode: 0755
     
-    - name: Setup rw- permissions to wp-content, so upload works
+    - name: Setup permissions to wp-content directory
       become: yes
       file:
         path: "/var/www/{{ wp_root_dir }}/wp-content"
         state: directory
         recurse: yes
-        mode: 0766
+        mode: 0767
     
     - name: Check if WP-CLI dir exists
       become: yes
@@ -182,20 +186,22 @@
     - name: Install WP-CLI 
       become_user: ber
       shell: 'wp core install --url="{{ wp_iphost }}" --title="{{ title }}" --admin_user="{{ wp_admin_user }}" --admin_email="{{ wp_admin_mail }}" --admin_password="{{ wp_admin_password }}" --path="/var/www/{{ wp_root_dir }}"'
-      #sudo -u ber -i --
       
     - name: Install Theme
       become_user: ber
-      shell: 'wp theme install twentynineteen --activate --path="/var/www/{{ wp_root_dir }}"'
+      shell: 'wp theme install twentynineteen --activate --force --path="/var/www/{{ wp_root_dir }}"'
     
-    - name: Restart MySQL 
-      become: yes    
-      service:
-        name: mysql
-        state: restarted
-    
-    - name: Restart Nginx
+  handlers:
+    - name: Reload Nginx
       become: yes
-      service:
+      systemd:
         name: nginx
-        state: restarted
+        state: reloaded    
+      
+    - name: Reload Mysql
+      become: yes
+      systemd:
+        name: mysql
+        state: reloaded
+    
+      
