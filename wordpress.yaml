@@ -34,10 +34,10 @@
        createhome: yes        
        home: "{{ user_home }}" 
       
-    - name: Update the System
-      become: yes
-      apt:
-        update_cache: yes
+    #- name: Update the System
+      #become: yes
+      #apt:
+        #update_cache: yes
     
     - name: Install LEMP Packages
       become: yes
@@ -130,7 +130,7 @@
         state: present
         login_user: root
         login_password: "{{ mysql_password }}"
-      notify: Reload Mysql
+      notify: Restart Mysql
       
     - name: Check if WP dir exists
       become: yes
@@ -198,10 +198,11 @@
         name: nginx
         state: reloaded    
       
-    - name: Reload Mysql
+    - name: Restart Mysql
       become: yes
       systemd:
         name: mysql
-        state: reloaded
+        state: restart
+        
     
       
